@@ -1,89 +1,161 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot;
+
+/*
+ * ============================ RobotContainer ============================
+ *
+ * RobotContainer is the "wiring hub" of a command-based robot.
+ *
+ * This class is responsible for:
+ *   - Creating ONE instance of each subsystem
+ *   - Creating controllers (joysticks, gamepads)
+ *   - Defining how buttons trigger commands
+ *   - Defining default commands (what runs when nothing else is scheduled)
+ *   - Selecting which autonomous command to run
+ *
+ * This class is NOT responsible for:
+ *   - Low-level motor control
+ *   - Reading sensors directly
+ *   - Implementing robot behavior logic
+ *
+ * Those responsibilities belong in:
+ *   - Subsystems (hardware ownership + basic actions)
+ *   - Commands (requesting actions from subsystems)
+ *
+ * Think of RobotContainer as a wiring diagram:
+ * it connects inputs (controllers, autos) to behaviors (commands),
+ * but it does not DO the work itself.
+ */
 
 import com.pathplanner.lib.auto.NamedCommands;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.math.MathUtil;
-//import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import frc.robot.Constants.ElevatorConstants;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.subsystems.ElevatorSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.JoystickButton;
+
+import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.OIConstants;
-import frc.robot.commands.auto.AutonomousCommand;
-import frc.robot.commands.auto.AutonomousCommand2;
 import frc.robot.subsystems.DriveSubsystem;
+import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
-//import frc.robot.BuildConstants;
 
-/**
- * This class is where the bulk of the robot should be declared.  Since Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
- * periodic methods (other than the scheduler calls).  Instead, the structure of the robot
- * (including subsystems, commands, and button mappings) should be declared here.
- */
 public class RobotContainer {
-  
-  public void updateshuffleboard(){
-    SmartDashboard.updateValues();
-  }
 
-  public void setRelativeCommandFalse(){
-    fieldrelative = false;
-  }
-  public void setRelativeCommandTrue(){
-    fieldrelative = true;
-  }
-  public void toggleFieldRelative(){ // is this unused?
-    fieldrelative = !fieldrelative;
-  }                          
+  /* ===================================================================== */
+  /*                           SUBSYSTEM CREATION                           */
+  /* ===================================================================== */
+  /*
+   * Subsystems are created ONCE and live for the entire life of the robot.
+   *
+   * Each subsystem:
+   *   - Owns its hardware (motors, sensors)
+   *   - Provides methods or commands to control that hardware
+   *
+   * Commands and RobotContainer NEVER directly control motors.
+   */
 
-  public boolean fieldrelative = true;
-
-
-
-
-
-// The robot's subsystems
   private final DriveSubsystem m_robotDrive = new DriveSubsystem();
   private final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
   private final ShooterSubsystem m_shooter = new ShooterSubsystem();
-  public final Command ele_GoLoad = new InstantCommand(() -> m_elevator.setTargetPosition(ElevatorConstants.kStageLoad), m_elevator);
-  public final Command ele_GoL1 = new InstantCommand(() -> m_elevator.setTargetPosition(ElevatorConstants.kStageL1), m_elevator);
-  public final Command ele_GoL2 = new InstantCommand(() -> m_elevator.setTargetPosition(ElevatorConstants.kStageL2), m_elevator);
-  public final Command ele_GoL3 = new InstantCommand(() -> m_elevator.setTargetPosition(ElevatorConstants.kStageL3), m_elevator);
-  public final AutonomousCommand autoCommand = new AutonomousCommand(m_robotDrive);
-  public final AutonomousCommand2 autoCommand2 = new AutonomousCommand2(m_robotDrive);
 
-
-
-
-  // The driver's controller
-  CommandXboxController m_driverController = new CommandXboxController(OIConstants.kDriverControllerPort);
-  CommandXboxController m_driverController2 = new CommandXboxController(OIConstants.kDriverController2Port);
-
-  //m_chooser
-  SendableChooser<Command> m_chooser = new SendableChooser<>();
-
-
-  /**
-   * The container for the robot. Contains subsystems, OI devices, and commands.
+  /* ===================================================================== */
+  /*                              DRIVER STATE                              */
+  /* ===================================================================== */
+  /*
+   * This variable tracks whether the drivetrain is in field-relative mode.
+   *
+   * Field-relative driving means:
+   *   - Pushing the joystick forward always moves the robot away from the
+   *     driver station, regardless of robot rotation.
+   *
+   * This is driver INTENT, not hardware state, so it belongs here.
    */
+
+  private boolean fieldRelative = true;
+
+  /* ===================================================================== */
+  /*                   COMMANDS SHARED WITH AUTONOMOUS                      */
+  /* ===================================================================== */
+  /*
+   * These commands are created as fields so they can be:
+   *   - Triggered by controller buttons
+   *   - Triggered by PathPlanner autonomous routines
+   *
+   * PathPlanner refers to commands by STRING NAME, so these must exist
+   * ahead of time and remain alive.
+   */
+
+  public final Command ele_GoLoad =
+      new InstantCommand(
+          () -> m_elevator.setTargetPosition(ElevatorConstants.kStageLoad),
+          m_elevator);
+
+  public final Command ele_GoL1 =
+      new InstantCommand(
+          () -> m_elevator.setTargetPosition(ElevatorConstants.kStageL1),
+          m_elevator);
+
+  public final Command ele_GoL2 =
+      new InstantCommand(
+          () -> m_elevator.setTargetPosition(ElevatorConstants.kStageL2),
+          m_elevator);
+
+  public final Command ele_GoL3 =
+      new InstantCommand(
+          () -> m_elevator.setTargetPosition(ElevatorConstants.kStageL3),
+          m_elevator);
+
+  /* ===================================================================== */
+  /*                            DRIVER CONTROLLERS                          */
+  /* ===================================================================== */
+  /*
+   * RobotContainer is responsible for reading controllers.
+   *
+   * Subsystems should NEVER read joysticks directly.
+   * This keeps subsystems reusable and testable.
+   */
+
+  private final CommandXboxController m_driverController =
+      new CommandXboxController(OIConstants.kDriverControllerPort);
+
+  private final CommandXboxController m_driverController2 =
+      new CommandXboxController(OIConstants.kDriverController2Port);
+
+  /* ===================================================================== */
+  /*                           AUTONOMOUS SELECTION                         */
+  /* ===================================================================== */
+  /*
+   * The SendableChooser allows drivers to select which autonomous routine
+   * to run using Shuffleboard / SmartDashboard.
+   *
+   * Each option corresponds to a PathPlanner ".auto" file.
+   */
+
+  private final SendableChooser<Command> m_chooser = new SendableChooser<>();
+
+  /* ===================================================================== */
+  /*                               CONSTRUCTOR                              */
+  /* ===================================================================== */
+
   public RobotContainer() {
 
-    //m_chooser
-
-    // Shuffleboard.getTab("Autonomous").add(m_chooser);
+    /* ----------------------------------------------------------------- */
+    /*                    PATHPLANNER NAMED COMMANDS                      */
+    /* ----------------------------------------------------------------- */
+    /*
+     * PathPlanner autos can reference "Named Commands" by name.
+     *
+     * Example:
+     *   In PathPlanner, an event marker named "L2"
+     *   will trigger the command registered as "L2" here.
+     *
+     * IMPORTANT:
+     *   The string names MUST match exactly.
+     */
 
     NamedCommands.registerCommand("Load", ele_GoLoad);
     NamedCommands.registerCommand("L1", ele_GoL1);
@@ -95,102 +167,135 @@ public class RobotContainer {
     NamedCommands.registerCommand("Shoot", m_shooter.releaseCommand());
     NamedCommands.registerCommand("Stop", m_shooter.stopMotor());
 
+    /* ----------------------------------------------------------------- */
+    /*                         AUTONOMOUS OPTIONS                         */
+    /* ----------------------------------------------------------------- */
+
     m_chooser.addOption("preload_Auto", new PathPlannerAuto("preload_Auto"));
     m_chooser.addOption("L2_JI_C2", new PathPlannerAuto("L2_JI_C2"));
     m_chooser.addOption("L2_FE_C5", new PathPlannerAuto("L2_FE_C5"));
-
     m_chooser.addOption("Move_Forward_Short", new PathPlannerAuto("Move_Forward_Short"));
-    m_chooser.addOption("Do Nothing", new Command(){});
+    m_chooser.addOption("Do Nothing", new Command() {});
+
     SmartDashboard.putData("Auto Chooser", m_chooser);
 
+    /* ----------------------------------------------------------------- */
+    /*                        BUTTON CONFIGURATION                         */
+    /* ----------------------------------------------------------------- */
 
-
-
-
-    // Configure the button bindings
     configureButtonBindings();
-      
 
-    
+    /* ----------------------------------------------------------------- */
+    /*                         DEFAULT COMMANDS                            */
+    /* ----------------------------------------------------------------- */
+    /*
+     * Default commands run whenever no other command is using a subsystem.
+     *
+     * For the drivetrain, this means:
+     *   - When the driver is not running an auto or special command,
+     *     joystick input controls the robot.
+     *
+     * LAMBDA EXPLANATION:
+     *   The "() ->" code below does NOT run immediately.
+     *   It is stored and executed repeatedly (~50 times per second)
+     *   by the WPILib command scheduler.
+     */
 
-    // Configure default commands
     m_robotDrive.setDefaultCommand(
-        // The left stick controls translation of the robot.
-        // Turning is controlled by the X axis of the right stick.
         new RunCommand(
             () -> m_robotDrive.drive(
-                -MathUtil.applyDeadband(m_driverController.getLeftY(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getLeftX(), OIConstants.kDriveDeadband),
-                -MathUtil.applyDeadband(m_driverController.getRightX(), OIConstants.kDriveDeadband),
-                fieldrelative),
+                -MathUtil.applyDeadband(
+                    m_driverController.getLeftY(),
+                    OIConstants.kDriveDeadband),
+                -MathUtil.applyDeadband(
+                    m_driverController.getLeftX(),
+                    OIConstants.kDriveDeadband),
+                -MathUtil.applyDeadband(
+                    m_driverController.getRightX(),
+                    OIConstants.kDriveDeadband),
+                fieldRelative),
             m_robotDrive));
-    /*
-    m_elevator.setDefaultCommand(
-      new RunCommand(
-        () -> m_elevator.stickControl(-MathUtil.applyDeadband(m_driverController2.getLeftY(), OIConstants.kDriveDeadband)), 
-        m_elevator
-      )
-    );
-    */
   }
 
-  /**
-   * Use this method to define your button->command mappings. Buttons can be
-   * created by
-   * instantiating a {@link edu.wpi.first.wpilibj.GenericHID} or one of its
-   * subclasses ({@link
-   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then calling
-   * passing it to a
-   * {@link JoystickButton}.
-   */
+  /* ===================================================================== */
+  /*                           BUTTON BINDINGS                              */
+  /* ===================================================================== */
+
   private void configureButtonBindings() {
 
-  // Driver controller - mdriverController
-    // Right trigger sets swerve in X configuration
-    m_driverController.leftTrigger()
-        .whileTrue(new RunCommand(
-            () -> m_robotDrive.setX(),
-            m_robotDrive
-        ));
-    // Right bumper controls field reletive - button relesed set to robot relative for swerve testing
-    m_driverController.rightBumper()
-        .whileFalse(new RunCommand(
-          () -> setRelativeCommandTrue()))
-        .whileTrue(new RunCommand(
-          () -> setRelativeCommandFalse()));      
+    /* ---------------------- Driver Controller ------------------------ */
 
-  //Copilot controller - mdriverController2
-    // A button elevator stage L1
+    // Left trigger: force swerve modules into X configuration
+    m_driverController.leftTrigger()
+        .whileTrue(
+            new RunCommand(
+                () -> m_robotDrive.setX(),
+                m_robotDrive));
+
+    /*
+     * Right bumper controls field-relative mode.
+     *
+     * When held:
+     *   - Robot drives in ROBOT-relative mode (useful for testing)
+     * When released:
+     *   - Return to FIELD-relative driving
+     */
+    m_driverController.rightBumper()
+        .whileFalse(new RunCommand(() -> setFieldRelativeTrue()))
+        .whileTrue(new RunCommand(() -> setFieldRelativeFalse()));
+
+    /* ---------------------- Copilot Controller ------------------------ */
+
+    // Elevator preset positions
     m_driverController2.a().toggleOnTrue(ele_GoL1);
-    // B button elevator stage L2
     m_driverController2.b().toggleOnTrue(ele_GoL2);
-    // X button elevator stage L3
     m_driverController2.x().toggleOnTrue(ele_GoL3);
-    // Left bumper elevator stage Load
     m_driverController2.y().toggleOnTrue(ele_GoLoad);
-    // Right bumper elevator stage Load
     m_driverController2.rightBumper().toggleOnTrue(ele_GoLoad);
-    // Left Bumper
-    m_driverController2.leftBumper().whileTrue(m_shooter.reverseIntakeCommand());
-    // Right trigger triggers release command to shoot
-    m_driverController.rightTrigger().whileTrue(m_shooter.releaseCommand());
-    // Left trigger intakes coral
-    m_driverController2.rightTrigger().onTrue(m_shooter.olIntakeCommand()).onFalse(m_shooter.stopMotor());
-    // Pilot D-Pad Down to Reset the elevator
-    m_driverController2.povDown().onTrue(m_elevator.slowBottom()).toggleOnFalse(m_elevator.resetElevator());     
+
+    // Intake / shooter controls
+    m_driverController2.leftBumper()
+        .whileTrue(m_shooter.reverseIntakeCommand());
+
+    m_driverController.rightTrigger()
+        .whileTrue(m_shooter.releaseCommand());
+
+    m_driverController2.rightTrigger()
+        .onTrue(m_shooter.olIntakeCommand())
+        .onFalse(m_shooter.stopMotor());
+
+    // Elevator homing / reset
+    m_driverController2.povDown()
+        .onTrue(m_elevator.slowBottom())
+        .toggleOnFalse(m_elevator.resetElevator());
   }
 
+  /* ===================================================================== */
+  /*                              AUTONOMOUS                                */
+  /* ===================================================================== */
+
+  /*
+   * This method is called by Robot.java at the start of autonomous mode.
+   *
+   * Whatever command is returned here will be scheduled and run.
+   */
   public Command getAutonomousCommand() {
     return m_chooser.getSelected();
   }
 
+  /* ===================================================================== */
+  /*                              HELPERS                                   */
+  /* ===================================================================== */
 
-    // Print Git Data (maybe we will try this later)
-    //public void printGitData() {
-    //  System.out.println("Repo:" + BuildConstants.MAVEN_NAME);
-    //  System.out.println("Branch:" + BuildConstants.GIT_BRANCH);
-    //  System.out.println("Git Date:" + BuildConstants.GIT_DATE);
-    //  System.out.println("Build Date:" + BuildConstants.BUILD_DATE);
-    //};
-  
+  private void setFieldRelativeTrue() {
+    fieldRelative = true;
+  }
+
+  private void setFieldRelativeFalse() {
+    fieldRelative = false;
+  }
+
+  public void updateShuffleboard() {
+    SmartDashboard.updateValues();
+  }
 }
