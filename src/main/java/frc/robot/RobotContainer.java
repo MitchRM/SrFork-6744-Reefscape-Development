@@ -20,8 +20,6 @@ import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.Constants.OIConstants;
-import frc.robot.commands.auto.AutonomousCommand;
-import frc.robot.commands.auto.AutonomousCommand2;
 import frc.robot.subsystems.DriveSubsystem;
 import frc.robot.subsystems.ShooterSubsystem;
 //import frc.robot.BuildConstants;
@@ -62,9 +60,6 @@ public class RobotContainer {
   public final Command ele_GoL1 = new InstantCommand(() -> m_elevator.setTargetPosition(ElevatorConstants.kStageL1), m_elevator);
   public final Command ele_GoL2 = new InstantCommand(() -> m_elevator.setTargetPosition(ElevatorConstants.kStageL2), m_elevator);
   public final Command ele_GoL3 = new InstantCommand(() -> m_elevator.setTargetPosition(ElevatorConstants.kStageL3), m_elevator);
-  public final AutonomousCommand autoCommand = new AutonomousCommand(m_robotDrive);
-  public final AutonomousCommand2 autoCommand2 = new AutonomousCommand2(m_robotDrive);
-
 
 
 
