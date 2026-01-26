@@ -1,4 +1,28 @@
 package frc.robot.subsystems;
+
+/*
+ * ========================= ShooterSubsystem =========================
+ *
+ * This subsystem controls the shooter / intake mechanism.
+ *
+ * It owns:
+ *   - One Spark MAX motor (shooter/intake wheels)
+ *   - An encoder on that motor (currently unused)
+ *   - A color sensor used to detect game pieces
+ *
+ * The shooter currently uses OPEN-LOOP control:
+ *   - We directly set motor speed
+ *   - There is no PID or velocity control yet
+ *
+ * Commands request actions like:
+ *   - Intake
+ *   - Shoot
+ *   - Reverse
+ *   - Stop
+ *
+ * The subsystem handles how those actions affect hardware.
+ */
+
 import com.revrobotics.ColorSensorV3;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkBase.PersistMode;
@@ -10,114 +34,146 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+
 import frc.robot.Constants.ColorSensorConstants;
 import frc.robot.Constants.ShooterConstants;
 
+public class ShooterSubsystem extends SubsystemBase {
 
+  /* ==========================================================
+   *                         HARDWARE
+   * ==========================================================
+   */
 
+  /*
+   * Single motor that both intakes and shoots game pieces.
+   *
+   * Positive vs negative direction determines:
+   *   - Intake
+   *   - Reverse
+   *   - Shooting
+   */
+  private final SparkMax m_shooterMotor =
+      new SparkMax(
+          ShooterConstants.kShooterCanId,
+          MotorType.kBrushless);
 
-public class ShooterSubsystem extends SubsystemBase{
+  /*
+   * Encoder on the shooter motor.
+   *
+   * Currently not used for control.
+   * Kept for future upgrades such as:
+   *   - Velocity-based shooting
+   *   - Distance-based feeding
+   */
+  private final RelativeEncoder m_shootEncoder =
+      m_shooterMotor.getEncoder();
 
-    // The shooter motor
-    private SparkMax m_shooterMotor = new SparkMax(ShooterConstants.kShooterCanId, MotorType.kBrushless);
-  
-    // The shooter encoder (set up but not used yet - we may need it later) 
-    private RelativeEncoder m_shootEncoder = m_shooterMotor.getEncoder(); 
+  /*
+   * Color sensor used to detect game pieces.
+   *
+   * This allows the robot to know when it has collected coral.
+   */
+  private final ColorSensorV3 m_colorSensor =
+      new ColorSensorV3(ColorSensorConstants.kSensorPort);
 
+  /* ==========================================================
+   *                       CONSTRUCTOR
+   * ==========================================================
+   */
 
-    private final ColorSensorV3 m_colorSensor = new ColorSensorV3(ColorSensorConstants.kSensorPort);
-  
+  public ShooterSubsystem() {
 
+    SparkMaxConfig shootMotorConfig = new SparkMaxConfig();
 
+    // Limit current and brake when stopped
+    shootMotorConfig
+        .smartCurrentLimit(30)
+        .idleMode(IdleMode.kBrake);
 
+    // Apply configuration to motor controller
+    m_shooterMotor.configure(
+        shootMotorConfig,
+        ResetMode.kResetSafeParameters,
+        PersistMode.kPersistParameters);
 
-    // DriveSubsystem constructor - creates & initializes DriveSubsystem object
-    public ShooterSubsystem(){
-    
-        // Create new SPARK MAX configuration objects. These will store the
-        // configuration parameters for the SPARK MAXes that we will set below.
-        SparkMaxConfig shootMotorConfig = new SparkMaxConfig();
-    
-        // Set current limit and idle mode for the shooter motor
-        shootMotorConfig
-            .smartCurrentLimit(30)
-            .idleMode(IdleMode.kBrake);
+    // Zero encoder at startup
+    m_shootEncoder.setPosition(0);
+  }
 
-        // Apply the configuration settings to the shooter motor SPARK MAX   
-        // - kResetSafeParameters is used to get the SPARK MAX to a known state. This
-        //     is useful in case the SPARK MAX is replaced.
-        // - kPersistParameters is used to ensure the configuration is not lost when
-        //     the SPARK MAX loses power. This is useful for power cycles that may occur
-        //     mid-operation.
-     
-        m_shooterMotor.configure(shootMotorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+  /* ==========================================================
+   *                          SENSORS
+   * ==========================================================
+   */
 
-        // Zero shooter encoder on initialization
-        m_shootEncoder.setPosition(0);
-    }
+  /*
+   * Returns true if the color sensor detects "white".
+   *
+   * The threshold values were determined experimentally.
+   * These magic numbers could be moved to Constants later.
+   */
+  public boolean isWhite() {
 
-    //Shooter Commands
-    public boolean isWhite(){
-        int blue = m_colorSensor.getBlue();
-        int red = m_colorSensor.getRed();
-        int green = m_colorSensor.getGreen();
+    int blue = m_colorSensor.getBlue();
+    int red = m_colorSensor.getRed();
+    int green = m_colorSensor.getGreen();
 
-        return (red > 7800 && green > 14600 && blue > 7800);
-      }
+    return (red > 7800 && green > 14600 && blue > 7800);
+  }
 
-    public Command stopMotor(){
-        return run(
+  /* ==========================================================
+   *                SUBSYSTEM-PROVIDED COMMANDS
+   * ==========================================================
+   *
+   * These commands directly control the shooter motor.
+   *
+   * They use startEnd(), meaning:
+   *   - Motor starts when command begins
+   *   - Motor stops automatically when command ends
+   */
+
+  public Command stopMotor() {
+    return run(() -> m_shooterMotor.set(0));
+  }
+
+  /*
+   * Shoot game piece out of robot.
+   */
+  public Command releaseCommand() {
+    return startEnd(
+        () -> m_shooterMotor.set(-ShooterConstants.k_shooterSpeed),
         () -> m_shooterMotor.set(0));
-    }
-    
-    public Command releaseCommand() {
-        return startEnd(
-            () -> m_shooterMotor.set(-ShooterConstants.k_shooterSpeed), 
-            () -> m_shooterMotor.set(0));
-    }    
+  }
 
-    public Command olIntakeCommand() {
-        return startEnd(
-            () -> m_shooterMotor.set(-ShooterConstants.k_shooterintakeSpeed), 
-            () -> m_shooterMotor.set(0));
-    }
+  /*
+   * Intake game piece into robot.
+   *
+   * "ol" stands for open-loop.
+   */
+  public Command olIntakeCommand() {
+    return startEnd(
+        () -> m_shooterMotor.set(-ShooterConstants.k_shooterintakeSpeed),
+        () -> m_shooterMotor.set(0));
+  }
 
-    public Command reverseIntakeCommand() {
-        return startEnd(
-            () -> m_shooterMotor.set(ShooterConstants.k_shooterintakeSpeed), 
-            () -> m_shooterMotor.set(0));
+  /*
+   * Reverse intake to eject or unjam.
+   */
+  public Command reverseIntakeCommand() {
+    return startEnd(
+        () -> m_shooterMotor.set(ShooterConstants.k_shooterintakeSpeed),
+        () -> m_shooterMotor.set(0));
+  }
 
-    }
+  /* ==========================================================
+   *                         PERIODIC
+   * ==========================================================
+   *
+   * Currently unused.
+   * Could be used later for dashboard telemetry.
+   */
 
-    // Shoot coral by turning the shootor wheels a distance in inches ///////where is distance set up?////////
-    // Let's figure out how to implement this later, when we know we need it. I think we have to use closed loop controller,
-    // and we may have to change all shooter commands to distance commands with various speeds.
-    // 
-    //  public Command shootDistCommand(double distance) {
-    //    return startEnd(
-    //        () -> m_shooterMotor.set(ShooterConstants.k_shootDistance), 
-    //        () -> m_shooterMotor.set(0));
-    //  }
-
-
-    @Override
-    public void periodic() {
-    // This method will be called once per scheduler run
-    // m_shooterMotor.getOutputCurrent();
-/*
-    SmartDashboard.putNumber("Shooter Motor Output", m_shooterMotor.getAppliedOutput());
-    SmartDashboard.putNumber("Shooter Motor Current", m_shooterMotor.getOutputCurrent());
-
-    SmartDashboard.putNumber("Shooter Motor P", m_shootEncoder.getPosition());
-    SmartDashboard.putNumber("Shooter Motor V", m_shootEncoder.getVelocity());
-
-    SmartDashboard.putBoolean("Shooter Full", isWhite());
-
-    SmartDashboard.getBoolean("Color Sensor", isWhite());
-    SmartDashboard.putNumber("Blue", m_colorSensor.getBlue());
-    SmartDashboard.putNumber("Red", m_colorSensor.getRed());
-    SmartDashboard.putNumber("Green", m_colorSensor.getGreen());
-    SmartDashboard.putString("Color", m_colorSensor.getColor().toHexString());
-*/
-    }
+  @Override
+  public void periodic() {
+  }
 }
