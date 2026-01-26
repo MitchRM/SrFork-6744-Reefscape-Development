@@ -22,7 +22,6 @@ public class ElevatorSubsystem extends SubsystemBase {
   private SparkMax m_sheep;
 
   private SparkClosedLoopController p_shepherd;
-  private SparkClosedLoopController p_sheep;
 
   private SparkAbsoluteEncoder e_cal;
 
@@ -49,7 +48,6 @@ public class ElevatorSubsystem extends SubsystemBase {
     m_setpoint = ElevatorConstants.kStartingPosition;
 
     p_shepherd = m_shepherd.getClosedLoopController();
-    p_sheep = m_sheep.getClosedLoopController();
 
     e_shepherd = m_shepherd.getEncoder();
     e_sheep = m_sheep.getEncoder();
