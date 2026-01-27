@@ -54,9 +54,6 @@ public class Robot extends TimedRobot {
     // and running subsystem periodic() methods.  This must be called from the robot's periodic
     // block in order for anything in the Command-based framework to work.
 
-    m_robotContainer.updateshuffleboard();
-
-    SmartDashboard.putBoolean("Field Relative", m_robotContainer.fieldrelative);
     SmartDashboard.putNumber("Match Time", DriverStation.getMatchTime());
 
     CommandScheduler.getInstance().run();
