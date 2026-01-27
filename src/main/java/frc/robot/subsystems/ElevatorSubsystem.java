@@ -68,8 +68,7 @@ public class ElevatorSubsystem extends SubsystemBase {
    */
 
   private final SparkClosedLoopController p_shepherd;
-  private final SparkClosedLoopController p_sheep;
-
+  
   /* ==========================================================
    *                         ENCODERS
    * ==========================================================
@@ -145,8 +144,7 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     // Get closed-loop controllers
     p_shepherd = m_shepherd.getClosedLoopController();
-    p_sheep = m_sheep.getClosedLoopController();
-
+    
     // Get encoders
     e_shepherd = m_shepherd.getEncoder();
     e_sheep = m_sheep.getEncoder();
