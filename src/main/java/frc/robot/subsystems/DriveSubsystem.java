@@ -96,6 +96,24 @@ public class DriveSubsystem extends SubsystemBase {
           DriveConstants.kGyroCanId,
           DriveConstants.kCanBus);
 
+
+
+  /* ===================================================================== */
+  /*                              DRIVER STATE                              */
+  /* ===================================================================== */
+  /*
+   * This variable tracks whether the drivetrain is in field-relative mode.
+   *
+   * Field-relative driving means:
+   *   - Pushing the joystick forward always moves the robot away from the
+   *     driver station, regardless of robot rotation.
+   *
+   * This determines the drive mode, so it belongs here.
+   */
+
+  private boolean m_fieldRelative = true;
+  
+  
   /* ==========================================================
    *                  DASHBOARD VISUALIZATION
    * ==========================================================
@@ -267,8 +285,10 @@ public class DriveSubsystem extends SubsystemBase {
     // Debug info
     SmartDashboard.putNumber("Gyro Rate", getTurnRate());
     SmartDashboard.putData("Pigeon Gyro", m_pigeon);
-    SmartDashboard.putData("Swerve Drive", m_swerveSendable);
-  }
+    SmartDashboard.putData("Swerve Drive", m_swerveSendable);  
+    SmartDashboard.putBoolean("Field Relative", m_fieldRelative);
+
+}
 
   /* ==========================================================
    *                    POSE / ODOMETRY API
@@ -290,6 +310,23 @@ public class DriveSubsystem extends SubsystemBase {
         },
         pose);
   }
+  /* ==========================================================
+   *                     DRIVING MODE
+   * ==========================================================
+   * These methods set and get the fieldReletive mode
+   * 
+   */
+
+    public void setFieldRelative(boolean value) {
+        m_fieldRelative = value;
+    }
+
+    public boolean isFieldRelative() {
+        return m_fieldRelative;
+    }
+
+    
+
 
   /* ==========================================================
    *                     TELEOP DRIVING
@@ -304,8 +341,7 @@ public class DriveSubsystem extends SubsystemBase {
   public void drive(
       double xSpeed,
       double ySpeed,
-      double rot,
-      boolean fieldRelative) {
+      double rot) {
 
     double xSpeedDelivered =
         xSpeed * DriveConstants.kMaxSpeedMetersPerSecond;
@@ -313,6 +349,7 @@ public class DriveSubsystem extends SubsystemBase {
         ySpeed * DriveConstants.kMaxSpeedMetersPerSecond;
     double rotDelivered =
         rot * DriveConstants.kMaxAngularSpeed;
+    boolean fieldRelative = m_fieldRelative;
 
     var swerveModuleStates =
         DriveConstants.kDriveKinematics.toSwerveModuleStates(

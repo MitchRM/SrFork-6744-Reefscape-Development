@@ -62,20 +62,7 @@ public class RobotContainer {
   private final ElevatorSubsystem m_elevator = new ElevatorSubsystem();
   private final ShooterSubsystem m_shooter = new ShooterSubsystem();
 
-  /* ===================================================================== */
-  /*                              DRIVER STATE                              */
-  /* ===================================================================== */
-  /*
-   * This variable tracks whether the drivetrain is in field-relative mode.
-   *
-   * Field-relative driving means:
-   *   - Pushing the joystick forward always moves the robot away from the
-   *     driver station, regardless of robot rotation.
-   *
-   * This is driver INTENT, not hardware state, so it belongs here.
-   */
-
-  private boolean fieldRelative = true;
+ 
 
   /* ===================================================================== */
   /*                   COMMANDS SHARED WITH AUTONOMOUS                      */
@@ -212,8 +199,7 @@ public class RobotContainer {
                     OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(
                     m_driverController.getRightX(),
-                    OIConstants.kDriveDeadband),
-                fieldRelative),
+                    OIConstants.kDriveDeadband)),
             m_robotDrive));
   }
 
@@ -241,8 +227,8 @@ public class RobotContainer {
      *   - Return to FIELD-relative driving
      */
     m_driverController.rightBumper()
-        .whileFalse(new RunCommand(() -> setFieldRelativeTrue()))
-        .whileTrue(new RunCommand(() -> setFieldRelativeFalse()));
+        .whileFalse(new RunCommand(() -> m_robotDrive.setFieldRelative(true)))
+        .whileTrue(new RunCommand(() -> m_robotDrive.setFieldRelative(false)));
 
     /* ---------------------- Copilot Controller ------------------------ */
 
@@ -283,19 +269,4 @@ public class RobotContainer {
     return m_chooser.getSelected();
   }
 
-  /* ===================================================================== */
-  /*                              HELPERS                                   */
-  /* ===================================================================== */
-
-  private void setFieldRelativeTrue() {
-    fieldRelative = true;
-  }
-
-  private void setFieldRelativeFalse() {
-    fieldRelative = false;
-  }
-
-  public void updateShuffleboard() {
-    SmartDashboard.updateValues();
-  }
 }
