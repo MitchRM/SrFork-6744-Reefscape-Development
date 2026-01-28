@@ -1,8 +1,11 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot;
+
+/*
+ * ============================ Constants ==============================
+ *
+ * Robot-wide constants. This class should not be used for any other purpose. All constants
+ * should be declared globally (i.e. public static). Do not put anything functional in this class.
+ */
 
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
@@ -12,12 +15,15 @@ import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.I2C;
 
-/**
- * Robot-wide constants. This class should not be used for any other purpose. All constants
- * should be declared globally (i.e. public static). Do not put anything functional in this class.
- */
+
 public final class Constants {
+
+  /* ==============================================================================
+   *                       DRIVE SUBSYSTEM CONSTANTS
+   * ==============================================================================
+   */
   public static final class DriveConstants {
+    
     // Maximum driving speed commands - These are the maximum speeds that can be requested by 
     // the driver or autonomous, they are not the maximum speed cababiity of the robot.
     public static final double kMaxSpeedMetersPerSecond = 3; // originally 4.8    TUNING
